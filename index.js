@@ -20,7 +20,9 @@ module.exports = function(md, options) {
 		for (var i = 2; i < tokens.length; i++) {
 
 			if (isTodoItem(tokens, i)) {
-				todoify(tokens[i], lastId, options, state.Token);
+				var dataSourceLine = tokens[i].map[1];
+				var dataSourceCode = tokens[i].content;
+				todoify(tokens[i], lastId, dataSourceLine, dataSourceCode, options, state.Token);
 				lastId += 1;
 				attrSet(tokens[i-2], 'class', options.liClass);
 				attrSet(tokens[parentToken(tokens, i-2)], 'class', options.ulClass);
@@ -57,7 +59,7 @@ function isTodoItem(tokens, index) {
 	       startsWithTodoMarkdown(tokens[index]);
 }
 
-function todoify(token, lastId, options, TokenConstructor) {
+function todoify(token, lastId, dataSourceLine, dataSourceCode, options, TokenConstructor) {
 	var id;
 	id = options.idPrefix + lastId
 	token.children[0].content = token.children[0].content.slice(3);
@@ -65,16 +67,16 @@ function todoify(token, lastId, options, TokenConstructor) {
 	token.children.unshift(beginLabel(id, TokenConstructor));
 	token.children.push(endLabel(TokenConstructor));
 	// checkbox
-	token.children.unshift(makeCheckbox(token, id, options, TokenConstructor));
+	token.children.unshift(makeCheckbox(token, id, dataSourceLine, dataSourceCode, options, TokenConstructor));
 	if (options.divWrap) {
 		token.children.unshift(beginWrap(options, TokenConstructor));
 		token.children.push(endWrap(TokenConstructor));
 	}
 }
 
-function makeCheckbox(token, id, options, TokenConstructor) {
+function makeCheckbox(token, id, dataSourceLine, dataSourceCode, options, TokenConstructor) {
 	var checkbox = new TokenConstructor('checkbox_input', 'input', 0);
-	checkbox.attrs = [["type", "checkbox"], ["id", id]];
+	checkbox.attrs = [["type", "checkbox"], ["id", id], ['data-source-line', dataSourceLine], ['data-source-code', dataSourceCode]];
 	var checked = /^\[[xX]\][ \u00A0]/.test(token.content); // if token.content starts with '[x] ' or '[X] '
 	if (checked === true) {
 	  checkbox.attrs.push(["checked", "true"]);
